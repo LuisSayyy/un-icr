@@ -22,7 +22,7 @@ function varargout = GUI_1(varargin)
 
 % Edit the above text to modify the response to help GUI_1
 
-% Last Modified by GUIDE v2.5 20-Aug-2015 23:33:15
+% Last Modified by GUIDE v2.5 19-Sep-2015 14:09:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -106,81 +106,16 @@ function binary_image_Callback(hObject, eventdata, handles)
 gray_scale_image_Callback(hObject, eventdata, handles);
 gray_x = getimage();
 
-%255 is white
-%0 is black
-%disp(gray_lgbt_a);
-
-GS_hist=imhist(gray_x);
-%1-256 where 1=0 and 256=255 (index 1-256(255)) 
-%disp(GS_hist(256));
-sum_all=sum(sum(gray_x));
-%fprintf('sum_all=%f.\n',sum_all);
-
-wht_back=0;
-wht_fore=0;
-varMax=0;
-threshold=0;
-sum_temp=0;
-total=sum(GS_hist);
-for t=1:256
-    wht_back=wht_back+GS_hist(t);
-    %fprintf('wht_back=%f.\n',wht_back);
-    if(wht_back==0)
-        continue;
-    end
-    wht_fore=total-wht_back;
-    %fprintf('wht_fore=%f.\n',wht_fore);
-    if(wht_fore==0)
-        break;
-    end
-    sum_temp=sum_temp+((t-1)*GS_hist(t));
-    %fprintf('sum_temp=%f.\n',sum_temp);
-    
-    mB=sum_temp/wht_back; %mean Backgroud
-    mF=(sum_all-sum_temp)/wht_fore; %mean Foreground
-   % fprintf('mB=%f.\n',mB);
-    %fprintf('mF=%f.\n',mF);
-    
-    var_Between = wht_back * wht_fore * (mB - mF) * (mB - mF);
-    %fprintf('var_Between=%f.\n',var_Between);
-
-    if(var_Between > varMax) 
-      varMax = var_Between;
-      threshold = t-1;
-    end
-end
-%fprintf('threshold=%f.\n',threshold);
-%fprintf('sum_all=%f.\n',sum_all);
-
-thres_percent=threshold/255;
-%fprintf('thres_percent=%f.\n',thres_percent);
-BW = im2bw(gray_x, thres_percent);
-set(handles.output_display, 'string', strcat('THRESHOLD VALUE: ', num2str(thres_percent)));
-%disp(BW);
+threshold = Otsu(gray_x);
+BW = im2bw(gray_x, threshold);
+set(handles.output_display, 'string', strcat('THRESHOLD VALUE: ', num2str(threshold)));
 
 input_image = xor(1,BW);
-
 imshow(input_image);
 
 %--------------- DISPLAY HISTOGRAM OF BINARY IMAGE -------------
 
-rows = 0;
-for n = 1 : length(input_image(1,:));
-    rows(n) = sum(input_image(:,n));
-end
-
-index = 1;
-for i = 1 : length(rows);
-   copies = rows(i);
-   if copies == 0
-       continue;
-   else
-       for j = 1 : copies;
-          hist_params(index) = i;
-           index = index + 1;
-       end
-   end 
-end
+hist_params = Hist_Params(input_image);
 
 axes(handles.axes3);
 hist(hist_params,1:length(input_image(1,:)));
@@ -197,47 +132,11 @@ function skew_correction_Callback(hObject, eventdata, handles)
 
 binary_image_Callback(hObject, eventdata, handles);
 input_image = getimage();
-
-rotation = -40;
-
-for n = 1 : 18;
-    
-    if (n == 18)
-        rotation = 0;
-    end
-    
-    set(handles.output_display, 'string', strcat('ROTATION: ', num2str(rotation)));
-    
-    rotated_image = imrotate(input_image, rotation);
-    imshow(rotated_image);
-    
-    clear rows;
-    clear hist_params;
-    for n = 1 : length(rotated_image(1,:));
-        rows(n) = sum(rotated_image(:,n));
-    end
-
-    index = 1;
-    for i = 1 : length(rows);
-       copies = rows(i);
-       if copies == 0
-           continue;
-       else
-           for j = 1 : copies;
-              hist_params(index) = i;
-               index = index + 1;
-           end
-       end 
-    end
-  
-    histogram = hist(hist_params,1:length(rotated_image(1,:)));
-   
-    axes(handles.axes2);
-    hist(hist_params,1:length(rotated_image(1,:)));
-    axes(handles.axes1);
-
-    rotation = rotation+5;
-end
+slope = Skew_Correction(input_image);
+rotated_image = imrotate(input_image, atand(slope));
+set(handles.output_display, 'string', strcat('Image Slope Value: ', num2str(slope)));
+hold off;
+imshow(rotated_image);
 
 % --- Executes on button press in slant_correction.
 function slant_correction_Callback(hObject, eventdata, handles)
@@ -245,50 +144,12 @@ function slant_correction_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-binary_image_Callback(hObject, eventdata, handles);
+skew_correction_Callback(hObject, eventdata, handles)
 input_image = getimage();
+slant_angle = Slant_Correction(input_image)
 
-a = -0.90;
+set(handles.output_display, 'string', strcat('Image Slant Value: ', num2str(slant_angle)));
 
-for n = 1 : 13;
-    
-    if (n == 13)
-        a = 0;
-    end
-    
-    set(handles.output_display, 'string', strcat('SLANT TRESHOLD: ', num2str(a)));
-    
-    T = maketform('affine', [1 0 0; a 1 0; 0 0 1] );
-    transformed_image = imtransform(input_image,T, 'FillValues', 0);
-    imshow(transformed_image);
-    
-    clear rows;
-    clear hist_params;
-    for n = 1 : length(transformed_image(1,:));
-        rows(n) = sum(transformed_image(:,n));
-    end
-
-    index = 1;
-    for i = 1 : length(rows);
-       copies = rows(i);
-       if copies == 0
-           continue;
-       else
-           for j = 1 : copies;
-              hist_params(index) = i;
-               index = index + 1;
-           end
-       end 
-    end
-  
-    histogram = hist(hist_params,1:length(transformed_image(1,:)));
-    
-    axes(handles.axes2);
-    hist(hist_params,1:length(transformed_image(1,:)));
-    axes(handles.axes1);
-
-    a = a+0.15;
-end
 
 % --- Executes on button press in line_segmentation.
 function line_segmentation_Callback(hObject, eventdata, handles)
@@ -296,63 +157,18 @@ function line_segmentation_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-binary_image_Callback(hObject, eventdata, handles);
-imshow(getimage());
-
-input_image = getimage();
-
-%imwrite(input_image, strcat(handles.file_pwd, '\segments\', '1.png'));
-
-    clear rows;
-    clear hist_params;
-    
+    imshow(getimage());
+    input_image = getimage();
     [image_height,image_width] = size(input_image);
-    
-    for n = 1 : image_height;
-        rows(n) = sum(input_image(n,:));
-    end
-
-    index = 1;
-    
-    for i = 1 : image_height;
-       copies = rows(i);
-       if copies == 0
-           continue;
-       else
-           for j = 1 : copies;
-              hist_params(index) = i;
-               index = index + 1;
-           end
-       end 
-    end
-
-    axes(handles.axes2);
-    [counts,bins] = hist(hist_params,1:image_height);
-    barh(bins, counts);
-    axes(handles.axes1);
- 
-    line_segmentation_threshold = 0.02;
-    spc = 0;
-    for k = 1 : length(rows)-1;
-        if rows(k) > 0 && rows(k+1) == 0 && ((k+1 - segmentation_points(spc)) > image_height*line_segmentation_threshold)
-            spc = spc+1; 
-            segmentation_points(spc) = k+1;
-        elseif rows(k) == 0 && rows(k+1) > 0
-            spc = spc+1;
-            segmentation_points(spc) = k;
-        end
-    end
-    
+    [segmentation_points] = Line_Segmentation(input_image);
     imshow(input_image);
     hold on;
     
     for l = 1 : length(segmentation_points)
         line([1,image_width],[segmentation_points(l),segmentation_points(l)]);
     end
-    
     hold off;
-    
-    number_of_line_segments = floor(spc/2);
+    number_of_line_segments = floor(length(segmentation_points)/2);
     
     spc = 1;
     for line_number = 1 : number_of_line_segments;
@@ -373,75 +189,44 @@ function word_segmentation_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 line_segmentation_Callback(hObject, eventdata, handles);
-
-image_height = handles.image_height;
-image_width = handles.image_width;
 line_segmentation_points = handles.line_segmentation_points;
 
 line_top = 1;
 line_bottom = 2;
-
 total_words = 0;
 
-for segment_number = 1 : handles.number_of_line_segments
+FILE_PWD = handles.file_pwd;
+FILE_NAME = handles.file_name;
+FILE_EXTENSION = handles.file_extension;
+NUMBER_OF_LINE_SEGMENTS = handles.number_of_line_segments;
+NUMBER_OF_WORD_SEGMENTS = 0;
+
+for segment_number = 1 : NUMBER_OF_LINE_SEGMENTS
     
-    input_image = imread(strcat(handles.file_pwd, '\segments\', 'line_', int2str(segment_number), '_', handles.file_name, handles.file_extension));
-
-    clear rows;
-    clear hist_params;
-    for n = 1 : length(input_image(1,:));
-        rows(n) = sum(input_image(:,n));
-    end
-
-    index = 1;
-    for i = 1 : length(rows);
-       copies = rows(i);
-       if copies == 0
-           continue;
-       else
-           for j = 1 : copies;
-              hist_params(index) = i;
-               index = index + 1;
-           end
-       end 
-    end
-
-    axes(handles.axes2);
-    hist(hist_params,1:length(input_image(1,:)));
-    axes(handles.axes1);
-
-    spc = 0;
-    clear segmentation_points;
-    for k = 1 : length(rows)-1;
-        if rows(k) > 0 && rows(k+1) == 0
-            spc = spc+1; 
-            segmentation_points(spc) = k+1;
-        elseif rows(k) == 0 && rows(k+1) > 0
-            spc = spc+1;
-            segmentation_points(spc) = k;
-        end
-    end
+    input_image = imread(strcat(FILE_PWD, '\segments\', 'line_', int2str(segment_number), '_', FILE_NAME, FILE_EXTENSION));
+    [segmentation_points] = Word_Segmentation(input_image');
     
     for w = 1 : length(segmentation_points)
         line([segmentation_points(w), segmentation_points(w)],[line_segmentation_points(line_top),line_segmentation_points(line_bottom)]);
     end
-    
-    line_top = line_top + 2;
-    line_bottom = line_bottom + 2;
-    
+
     number_of_word_segments = floor(length(segmentation_points)/2);
-    total_words = total_words + number_of_word_segments;
+    NUMBER_OF_WORD_SEGMENTS = NUMBER_OF_WORD_SEGMENTS + number_of_word_segments;
     
     spc = 1;
     
     for n = 1 : number_of_word_segments;
         z = input_image(: , segmentation_points(spc): segmentation_points(spc+1));
-        imwrite(z, strcat(handles.file_pwd, '\segments\', 'line_', int2str(segment_number), '_word_', int2str(n), '_', handles.file_name, handles.file_extension));
+        imwrite(z, strcat(FILE_PWD, '\segments\', 'line_', int2str(segment_number), '_word_', int2str(n), '_', FILE_NAME, FILE_EXTENSION));
         spc = spc+2;
     end
+
+line_top = line_top + 2;
+line_bottom = line_bottom + 2;
+
 end
 
-handles.number_of_word_segments = total_words;
+handles.number_of_word_segments = NUMBER_OF_WORD_SEGMENTS;
 set(handles.output_display, 'string', strcat('NUMBER OF WORD SEGMENTS: ', num2str(total_words)));
 guidata(hObject, handles);
 
@@ -594,15 +379,12 @@ function diagonal_feature_extraction_Callback(hObject, eventdata, handles)
 % hObject    handle to diagonal_feature_extraction (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-for line_segment_number = 1 : handles.number_of_line_segments
-    for word_segment_number = 1 : handles.number_of_word_segments
-        for char_segment_number = 1 : handles.number_of_char_segments
-            input_image = imread(strcat(handles.file_pwd, '\segments\', 'line_', int2str(line_segment_number), '_word_', int2str(word_segment_number), '_char_', int2str(char_segment_number), '_', handles.file_name, handles.file_extension));
+           
+            input_image = getimage(); 
             m = 90;
             n = 60;
             input_image = imresize(input_image, [m n]);
             
-            imwrite(input_image, strcat(strcat(handles.file_pwd, '\segments\', 'resized.png')));
             imshow(input_image);
    
             zone_number = 1;
@@ -648,6 +430,66 @@ for line_segment_number = 1 : handles.number_of_line_segments
 
             A = [reshape(sub_feature,1,54), vertical_feature, horizontal_feature]
             set(handles.output_display, 'string', A);
-        end
-    end
-end
+            
+            handles.features = A;
+            guidata(hObject, handles);
+            
+            %create DBo69FE.mat in workspace
+            %right-sclick file save as..
+            %DO NOT CHANGE THE DIRECTORY!!!
+            %done
+            
+            %ORIGINAL
+            %B=A;
+            %load('Database.mat','A');
+            %A=[A;B];
+            %A
+            %save('Database.mat','A','-append');
+            
+            %TRIAL
+            %B=A;
+            %save('Sample.mat','B','-append');
+        
+            
+
+            %ANN PLAN
+            
+            %Input "Database.mat" "A" - Training/Test Data (69 Features)
+            %Target "Output.mat"** - Training/Answer Data (Letter A=1...)
+            %Sample "ClassfyData.mat"** "B"- Test Data (To be Classified)
+            %Output "Answer.mat"** - Output (1=A...)
+            
+            %To Do:
+            %Create .mat files
+
+
+
+
+
+% --- Executes on button press in Classification.
+function Classification_Callback(hObject, eventdata, handles)
+% hObject    handle to Classification (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    
+    
+    net=fitnet(69,'trainlm');
+    net.divideParam.trainRatio=1;
+    net.divideParam.valRatio=0;
+    net.divideParam.testRatio=0;
+    
+    A =  load('Database.mat','A');
+    AnsKey = load('Output.mat','AnsKey') ;
+    
+    Feature_Database = A.A;
+    Output = AnsKey.AnsKey;
+    
+    [net,pr]=train(net,Feature_Database',Output');
+
+    classification = char(net(handles.features') + 64);
+
+    set(handles.output_display, 'string', classification);
+            
+
+
+
