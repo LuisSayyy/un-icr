@@ -1,5 +1,5 @@
 
-function slope = Skew_Correction(input_image)
+function slope = Skew_Correction(input_image);
    
     %bw = imfill(bw, 'holes');                                  %fill holes with pixels
     [label num] = bwlabel(input_image), title('num');                    %determines the number of bounding boxes to be created
@@ -30,28 +30,4 @@ function slope = Skew_Correction(input_image)
 
     title('bounding box and centroid');
     
-%     rotation = -40;
-        %%%%
-
-%     for n = 1 : 18;
-% 
-%         if (n == 18)
-%             rotation = 0;
-%         end
-% 
-%         set(handles.output_display, 'string', strcat('ROTATION: ', num2str(rotation)));
-% 
-%         rotated_image = imrotate(input_image, rotation);
-%         imshow(rotated_image);
-% 
-%         hist_params = Hist_Params(rotated_image);
-% 
-%         histogram = hist(hist_params,1:length(rotated_image(1,:)));
-% 
-%         axes(handles.axes2);
-%         hist(hist_params,1:length(rotated_image(1,:)));
-%         axes(handles.axes1);
-% 
-%         rotation = rotation+5;
-%     end
 end

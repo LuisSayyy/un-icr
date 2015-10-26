@@ -35,7 +35,6 @@ function [segmentation_points] = Word_Segmentation(input_image)
         end
     end
  
-    segmentation_points
     deleted_points = [];
     
     dpc = 1;

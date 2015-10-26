@@ -162,12 +162,11 @@ function line_segmentation_Callback(hObject, eventdata, handles)
     [image_height,image_width] = size(input_image);
     [segmentation_points] = Line_Segmentation(input_image);
     imshow(input_image);
-    hold on;
     
     for l = 1 : length(segmentation_points)
         line([1,image_width],[segmentation_points(l),segmentation_points(l)]);
     end
-    hold off;
+    
     number_of_line_segments = floor(length(segmentation_points)/2);
     
     spc = 1;
@@ -201,33 +200,46 @@ FILE_EXTENSION = handles.file_extension;
 NUMBER_OF_LINE_SEGMENTS = handles.number_of_line_segments;
 NUMBER_OF_WORD_SEGMENTS = 0;
 
+
+overall_segmentation_points = [];
+osp = 1;
 for segment_number = 1 : NUMBER_OF_LINE_SEGMENTS
-    
-    input_image = imread(strcat(FILE_PWD, '\segments\', 'line_', int2str(segment_number), '_', FILE_NAME, FILE_EXTENSION));
-    [segmentation_points] = Word_Segmentation(input_image');
-    
-    for w = 1 : length(segmentation_points)
-        line([segmentation_points(w), segmentation_points(w)],[line_segmentation_points(line_top),line_segmentation_points(line_bottom)]);
-    end
+    input_path = strcat(FILE_PWD, '\segments\', 'line_', int2str(segment_number), '_', FILE_NAME, FILE_EXTENSION);
+    if exist(input_path) == 0
+        break;
+    else
+        input_image = imread(input_path);
+        [segmentation_points] = Word_Segmentation(input_image');
 
-    number_of_word_segments = floor(length(segmentation_points)/2);
-    NUMBER_OF_WORD_SEGMENTS = NUMBER_OF_WORD_SEGMENTS + number_of_word_segments;
-    
-    spc = 1;
-    
-    for n = 1 : number_of_word_segments;
-        z = input_image(: , segmentation_points(spc): segmentation_points(spc+1));
-        imwrite(z, strcat(FILE_PWD, '\segments\', 'line_', int2str(segment_number), '_word_', int2str(n), '_', FILE_NAME, FILE_EXTENSION));
-        spc = spc+2;
-    end
+        for w = 1 : length(segmentation_points)
+            line([segmentation_points(w), segmentation_points(w)],[line_segmentation_points(line_top),line_segmentation_points(line_bottom)]);
+        end
+        
+        number_of_word_segments = floor(length(segmentation_points)/2);
+        NUMBER_OF_WORD_SEGMENTS = NUMBER_OF_WORD_SEGMENTS + number_of_word_segments;
 
+        spc = 1;
+        for n = 1 : number_of_word_segments;
+            z = input_image(: , segmentation_points(spc): segmentation_points(spc+1));
+            imwrite(z, strcat(FILE_PWD, '\segments\', 'line_', int2str(segment_number), '_word_', int2str(n), '_', FILE_NAME, FILE_EXTENSION));
+            
+            overall_segmentation_point(osp) = segmentation_points(spc)
+            osp = osp+1;
+            overall_segmentation_point(osp) = segmentation_points(spc+1)
+            osp = osp+1;
+            
+            spc = spc+2;
+        end
+    end
+    
 line_top = line_top + 2;
 line_bottom = line_bottom + 2;
 
 end
 
 handles.number_of_word_segments = NUMBER_OF_WORD_SEGMENTS;
-set(handles.output_display, 'string', strcat('NUMBER OF WORD SEGMENTS: ', num2str(total_words)));
+handles.word_segmentation_points = overall_segmentation_point;
+set(handles.output_display, 'string', strcat('NUMBER OF WORD SEGMENTS: ', num2str(NUMBER_OF_WORD_SEGMENTS)));
 guidata(hObject, handles);
 
 % --- Executes on button press in character_segmentation.
@@ -236,66 +248,65 @@ function character_segmentation_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-line_segmentation_Callback(hObject, eventdata, handles);
+line_segmentation_points = handles.line_segmentation_points
+word_segmentation_points = handles.word_segmentation_points
 
-for line_segment_number = 1 : handles.number_of_line_segments
-    for word_segment_number = 1 : handles.number_of_word_segments
-        input_image = imread(strcat(handles.file_pwd, '\segments\', 'line_', int2str(line_segment_number), '_word_', int2str(word_segment_number), '_', handles.file_name, handles.file_extension));
-        input_image = input_image;
+line_top = 1;
+line_bottom = 2;
+word_left = 1;
+word_right = 2;
 
-        imshow(input_image);
+total_characters = 0;
 
-        clear rows;
-        clear hist_params;
-        for n = 1 : length(input_image(1,:));
-            rows(n) = sum(input_image(:,n));
-        end
+FILE_PWD = handles.file_pwd;
+FILE_NAME = handles.file_name;
+FILE_EXTENSION = handles.file_extension;
+NUMBER_OF_LINE_SEGMENTS = handles.number_of_line_segments;
+NUMBER_OF_WORD_SEGMENTS = handles.number_of_word_segments;
+NUMBER_OF_CHARACTER_SEGMENTS = 0;
 
-        index = 1;
-        for i = 1 : length(rows);
-           copies = rows(i);
-           if copies == 0
-               continue;
-           else
-               for j = 1 : copies;
-                  hist_params(index) = i;
-                   index = index + 1;
-               end
-           end 
-        end
+hold on;
 
-        axes(handles.axes2);
-        hist(hist_params,1:length(input_image(1,:)));
-        axes(handles.axes1);
+for segment_number = 1 : NUMBER_OF_LINE_SEGMENTS
+    
+    for word_segment_number = 1 : NUMBER_OF_WORD_SEGMENTS
+    
+        input_path = strcat(FILE_PWD, '\segments\', 'line_', int2str(segment_number), '_word_', int2str(word_segment_number), '_', FILE_NAME, FILE_EXTENSION);
 
-        
-%         hist_params
-%         [temp,originalpos] = sort( m, 'ascend' );
-%         n = temp(1:3)
-%         p=originalpos(1:3)
-        spc = 0;
+        if exist(input_path) == 0
+            break;
+        else
+            input_image = imread(input_path);
 
-        for k = 1 : length(rows)-1;
-            if rows(k) > 0 && rows(k+1) == 0
-                spc = spc+1; 
-                segmentation_points(spc) = k+1;
-            elseif rows(k) == 0 && rows(k+1) > 0
-                spc = spc+1;
-                segmentation_points(spc) = k;
+            [image_height,image_width] = size(input_image);
+            segmentation_points = Character_Segmentation(input_image);
+
+            for w = 1 : length(segmentation_points)
+                line([word_segmentation_points(word_left)+segmentation_points(w), word_segmentation_points(word_left)+segmentation_points(w)],[line_segmentation_points(line_top),line_segmentation_points(line_bottom)]);
+            end
+
+            number_of_char_segments = floor(length(segmentation_points)/2);
+            NUMBER_OF_CHARACTER_SEGMENTS = NUMBER_OF_CHARACTER_SEGMENTS + number_of_char_segments;
+
+            spc = 1;
+            for n = 1 : number_of_char_segments;
+                z = input_image(: , segmentation_points(spc): segmentation_points(spc+1));
+                imwrite(z, strcat(FILE_PWD, '\segments\', 'line_', int2str(segment_number), '_word_', int2str(word_segment_number), '_char_', int2str(n), '_', FILE_NAME, FILE_EXTENSION));
+                spc = spc+2;
             end
         end
-
-        number_of_char_segments = floor(length(segmentation_points)/2);
-        spc = 1;
-
-        for n = 1 : number_of_char_segments;
-        z = input_image(: , segmentation_points(spc): segmentation_points(spc+1));
-        imwrite(z, strcat(handles.file_pwd, '\segments\', 'line_', int2str(line_segment_number), '_word_', int2str(word_segment_number), '_char_', int2str(n), '_', handles.file_name, handles.file_extension));
-        spc = spc+2;
-        end
+                
+        word_left = word_left+2;
     end
+    
+line_top = line_top + 2;
+line_bottom = line_bottom + 2;
+
 end
 
+hold off;
+
+number_of_char_segments = NUMBER_OF_CHARACTER_SEGMENTS;
 handles.number_of_char_segments = number_of_char_segments;
 set(handles.output_display, 'string', strcat('NUMBER OF CHARACTER SEGMENTS: ', num2str(number_of_char_segments)));
 guidata(hObject, handles);

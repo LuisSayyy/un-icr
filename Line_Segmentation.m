@@ -38,7 +38,6 @@ function [segmentation_points] = Line_Segmentation(input_image)
         end
     end
  
-    segmentation_points
     deleted_points = [];
     
     dpc = 1;
