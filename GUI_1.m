@@ -300,6 +300,9 @@ for segment_number = 1 : NUMBER_OF_LINE_SEGMENTS
             end
         end
                 
+        word_segment_number
+        segmentation_points
+        
         word_left = word_left+2;
     end
     
@@ -309,9 +312,9 @@ line_bottom = line_bottom + 2;
 end
 
 hold off;
-
 number_of_char_segments = NUMBER_OF_CHARACTER_SEGMENTS;
 handles.number_of_char_segments = number_of_char_segments;
+handles.character_segmentation_points = segmentation_points;
 set(handles.output_display, 'string', strcat('NUMBER OF CHARACTER SEGMENTS: ', num2str(number_of_char_segments)));
 guidata(hObject, handles);
 
