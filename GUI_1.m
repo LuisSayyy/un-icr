@@ -144,9 +144,13 @@ function slant_correction_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-skew_correction_Callback(hObject, eventdata, handles)
 input_image = getimage();
-slant_angle = Slant_Correction(input_image)
+slant_angle = Slant_Correction(input_image);
+
+T = maketform('affine', [1 0 0; slant_angle 1 0; 0 0 1] );
+transformed_image = imtransform(input_image,T, 'FillValues', 0);
+
+imshow(transformed_image);
 
 set(handles.output_display, 'string', strcat('Image Slant Value: ', num2str(slant_angle)));
 

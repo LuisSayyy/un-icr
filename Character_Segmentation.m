@@ -26,7 +26,7 @@ function [segmentation_points] = Character_Segmentation(input_image_raw)
     ctr_sp = 1;
     
     for n = 2 : length(psp)
-        if psp(n)- psp(n-1) > 7
+        if psp(n)- psp(n-1) > 6
             ctr_sp = ctr_sp + 1;
             segmentation_points(ctr_sp) = floor((psp(n-1) + reference)/2);
             reference = psp(n);
