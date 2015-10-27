@@ -287,7 +287,7 @@ for segment_number = 1 : NUMBER_OF_LINE_SEGMENTS
             segmentation_points = Character_Segmentation(input_image);
 
             for w = 1 : length(segmentation_points)
-                line([word_segmentation_points(word_left)+segmentation_points(w), word_segmentation_points(word_left)+segmentation_points(w)],[line_segmentation_points(line_top),line_segmentation_points(line_bottom)],'Color', 'r');
+                line([word_segmentation_points(word_left)+segmentation_points(w), word_segmentation_points(word_left)+segmentation_points(w)],[line_segmentation_points(line_top),line_segmentation_points(line_bottom)]);
             end
             
             number_of_char_segments = floor(length(segmentation_points)/2)
